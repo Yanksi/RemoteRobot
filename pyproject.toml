@@ -1,0 +1,13 @@
+[project]
+name = "remote-so101-control"
+version = "0.1.0"
+description = "Local-loop SO-101 control over a high-level authenticated API"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "lerobot[feetech]>=0.6.1,<0.7",
+    "numpy>=2.0,<2.3",
+    "websockets>=16.0,<17",
+]
+
+[tool.uv]
+package = false

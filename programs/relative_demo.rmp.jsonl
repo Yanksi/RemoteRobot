@@ -1,0 +1,4 @@
+{"type":"header","format":"so101-joint-trajectory","version":1,"program_id":"relative-demo","model":"so101-follower","joints":["shoulder_pan","shoulder_lift","elbow_flex","wrist_flex","wrist_roll","gripper"],"coordinate_mode":"relative_deg","interpolation":"quintic_stop"}
+{"type":"point","t_us":0,"q_deg":[0,0,0,0,0,0]}
+{"type":"point","t_us":2000000,"q_deg":[2,0,0,0,0,0]}
+{"type":"point","t_us":4000000,"q_deg":[0,0,0,0,0,0]}
