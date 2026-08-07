@@ -19,6 +19,7 @@ import signal
 import threading
 import time
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -184,6 +185,53 @@ class SO101Backend:
         if self.robot is None:
             raise RuntimeError("robot isn't connected")
         return self.robot
+
+
+def limits_from_calibration(
+    calibration_path: Path,
+    policy: SafetyPolicy,
+    margin_deg: float,
+) -> SafetyPolicy:
+    """Clamp the policy to the arm's recorded travel.
+
+    The servos hold their own Min/Max_Position_Limit registers, so an out-of-range
+    goal is clamped in firmware rather than driven into a stop.  But lerobot's
+    unnormalize step bounds only the 0-100 joints, never a DEGREES one, so a policy
+    wider than the calibrated travel turns into silent under-travel: the arm stops
+    short of the commanded angle and the residual is usually too small to trip the
+    tracking check.  Deriving the limits here makes that an explicit rejection at
+    validation time, before torque.
+    """
+
+    from lerobot.motors.feetech import FeetechMotorsBus
+
+    resolution = FeetechMotorsBus.model_resolution_table["sts3215"] - 1
+    calibration = json.loads(calibration_path.read_text(encoding="utf-8"))
+    missing = set(JOINTS) - set(calibration)
+    if missing:
+        raise SystemExit(f"{calibration_path} is missing joints: {sorted(missing)}")
+
+    lower: list[float] = []
+    upper: list[float] = []
+    for index, name in enumerate(JOINTS):
+        entry = calibration[name]
+        raw_min, raw_max = float(entry["range_min"]), float(entry["range_max"])
+        if name == "gripper":
+            # RANGE_0_100 aperture percent, not degrees.  Full close/open must
+            # stay reachable, so no margin is subtracted here.
+            joint_min, joint_max = 0.0, 100.0
+        else:
+            mid = (raw_min + raw_max) / 2
+            joint_min = (raw_min - mid) * 360 / resolution + margin_deg
+            joint_max = (raw_max - mid) * 360 / resolution - margin_deg
+        if joint_min >= joint_max:
+            raise SystemExit(f"calibrated travel for {name} is smaller than the {margin_deg} deg margin")
+        lower.append(max(joint_min, policy.joint_min_deg[index]))
+        upper.append(min(joint_max, policy.joint_max_deg[index]))
+
+    for name, low, high in zip(JOINTS, lower, upper, strict=True):
+        LOG.info("joint limit %-14s %+8.2f .. %+8.2f", name, low, high)
+    return replace(policy, joint_min_deg=tuple(lower), joint_max_deg=tuple(upper))
 
 
 class SimulatedBackend:
@@ -715,6 +763,13 @@ class ProgramController:
                 return {"type": "stop_accepted", "state": "idle", "reason": reason}
             return self.active.request_stop(reason)
 
+    def wait_for_idle(self, timeout_s: float) -> bool:
+        with self.lock:
+            run = self.active
+        if run is None:
+            return True
+        return run.terminal_event.wait(timeout_s)
+
 
 def decode_message(raw: str | bytes) -> dict[str, Any]:
     if isinstance(raw, bytes):
@@ -878,6 +933,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--serial-port", default="COM3")
     parser.add_argument("--robot-id", default="my_follower_arm")
     parser.add_argument("--calibration-dir", type=Path, default=BASE_DIR / "calibration")
+    parser.add_argument(
+        "--limit-margin-deg",
+        type=float,
+        default=5.0,
+        help="keep validated targets this far inside the calibrated travel",
+    )
     parser.add_argument("--token-env", default="ROBOT_SERVER_TOKEN")
     parser.add_argument("--control-hz", type=float, default=20.0)
     parser.add_argument("--telemetry-hz", type=float, default=5.0)
@@ -897,9 +958,17 @@ async def run_server(args: argparse.Namespace) -> None:
     if args.telemetry_hz > args.control_hz:
         raise SystemExit("telemetry-hz cannot exceed control-hz")
 
+    policy = SafetyPolicy()
     if args.backend == "sim":
         backend_factory: Callable[[], MotorBackend] = SimulatedBackend
     else:
+        calibration_path = args.calibration_dir / f"{args.robot_id}.json"
+        if not calibration_path.is_file():
+            raise SystemExit(
+                f"missing calibration file: {calibration_path}; "
+                "remote automatic calibration is intentionally disabled"
+            )
+        policy = limits_from_calibration(calibration_path, policy, args.limit_margin_deg)
         backend_factory = lambda: SO101Backend(
             args.serial_port,
             args.robot_id,
@@ -908,7 +977,7 @@ async def run_server(args: argparse.Namespace) -> None:
         )
     controller = ProgramController(
         backend_factory,
-        SafetyPolicy(),
+        policy,
         args.control_hz,
         args.telemetry_hz,
         args.heartbeat_timeout,
@@ -939,6 +1008,17 @@ async def run_server(args: argparse.Namespace) -> None:
     ):
         LOG.info("robot stream server listening on ws://%s:%d (%s backend)", args.host, args.port, args.backend)
         await stop
+
+    # The execution thread is a daemon, so returning here would let interpreter
+    # shutdown kill it mid-motion and leave the motors energized.  Block until it
+    # has finished its own hold-then-disable path.
+    shutdown_timeout_s = args.hold_after_run + 5.0
+    if not await asyncio.to_thread(controller.wait_for_idle, shutdown_timeout_s):
+        LOG.error(
+            "run did not reach a terminal state within %.1fs of shutdown; "
+            "motor torque may still be enabled — use the physical E-stop",
+            shutdown_timeout_s,
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
