@@ -44,6 +44,10 @@ from robot_protocol import (
 LOG = logging.getLogger("robot_server")
 BASE_DIR = Path(__file__).resolve().parent
 TERMINAL_STATES = {"completed", "stopped", "faulted"}
+# The gripper is supervised separately: its units are aperture percent, not
+# degrees, so it cannot share the body joints' tracking threshold.
+GRIPPER_INDEX = JOINTS.index("gripper")
+BODY_INDICES = [index for index in range(len(JOINTS)) if index != GRIPPER_INDEX]
 
 
 class MotorBackend(Protocol):
@@ -580,14 +584,25 @@ class ProgramRun:
                 )
                 target = self._resolve(TrajectoryPoint(cursor_us, logical_target))
                 measured = backend.read_q()
-                tracking_error = float(np.max(np.abs(target - measured)))
-                tracking_violations = tracking_violations + 1 if tracking_error > self.policy.tracking_error_deg else 0
+                deviation = np.abs(target - measured)
+                tracking_error = float(np.max(deviation[BODY_INDICES]))
+                gripper_error = float(deviation[GRIPPER_INDEX])
+                gripper_limit = self.policy.gripper_tracking_error_pct
+                exceeded = tracking_error > self.policy.tracking_error_deg or (
+                    gripper_limit is not None and gripper_error > gripper_limit
+                )
+                tracking_violations = tracking_violations + 1 if exceeded else 0
                 if tracking_violations >= 5:
                     outcome, code = "faulted", "TRACKING_ERROR"
                     raise ProtocolError(
                         code,
-                        f"tracking error remained above {self.policy.tracking_error_deg:g} deg",
-                        details={"measured_error_deg": tracking_error},
+                        f"body tracking error stayed above {self.policy.tracking_error_deg:g} deg"
+                        if tracking_error > self.policy.tracking_error_deg
+                        else f"gripper deviation stayed above {gripper_limit:g}%",
+                        details={
+                            "measured_error_deg": tracking_error,
+                            "gripper_error_pct": gripper_error,
+                        },
                     )
                 backend.send_q(target)
 
@@ -602,6 +617,7 @@ class ProgramRun:
                             "type": "telemetry",
                             **self.snapshot(),
                             "tracking_error_deg": tracking_error,
+                            "gripper_error_pct": gripper_error,
                             "server_monotonic_us": time.monotonic_ns() // 1000,
                             "low_water": accepted_until - cursor_us < self.policy.low_water_us,
                         }
@@ -939,6 +955,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=5.0,
         help="keep validated targets this far inside the calibrated travel",
     )
+    parser.add_argument(
+        "--gripper-tracking-error-pct",
+        type=float,
+        default=None,
+        help="fault when gripper deviation exceeds this percent; off by default "
+        "because a grasp that stalls on an object holds a large error by design",
+    )
     parser.add_argument("--token-env", default="ROBOT_SERVER_TOKEN")
     parser.add_argument("--control-hz", type=float, default=20.0)
     parser.add_argument("--telemetry-hz", type=float, default=5.0)
@@ -958,7 +981,11 @@ async def run_server(args: argparse.Namespace) -> None:
     if args.telemetry_hz > args.control_hz:
         raise SystemExit("telemetry-hz cannot exceed control-hz")
 
-    policy = SafetyPolicy()
+    if args.gripper_tracking_error_pct is not None and args.gripper_tracking_error_pct <= 0:
+        raise SystemExit("--gripper-tracking-error-pct must be positive when set")
+    policy = replace(
+        SafetyPolicy(), gripper_tracking_error_pct=args.gripper_tracking_error_pct
+    )
     if args.backend == "sim":
         backend_factory: Callable[[], MotorBackend] = SimulatedBackend
     else:

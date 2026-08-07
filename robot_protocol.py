@@ -167,7 +167,15 @@ class SafetyPolicy:
     start_buffer_us: int = 2_000_000
     low_water_us: int = 1_000_000
     start_tolerance_deg: float = 5.0
+    # Supervises the five body joints only, in degrees.
     tracking_error_deg: float = 15.0
+    # The gripper is RANGE_0_100 aperture percent, and a grasp that stalls on an
+    # object holds a large, permanent position error by design -- that is what
+    # gripping is.  Position tracking therefore cannot distinguish a successful
+    # grasp from a failure, so it is off by default and the servo's own current
+    # and torque protection (configured at connect) is the real guard.  Set a
+    # percentage to fault on gripper deviation anyway.
+    gripper_tracking_error_pct: float | None = None
 
     def validate_position(self, point: TrajectoryPoint, coordinate_mode: str) -> None:
         for index, (name, value) in enumerate(zip(JOINTS, point.q_deg, strict=True)):
