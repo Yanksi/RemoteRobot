@@ -1,4 +1,10 @@
-# Remote SO-101 trajectory streaming
+# Remote robot trajectory streaming
+
+The stable v1 path still controls one SO-101.  A v2 implementation is being
+built alongside it to support locally registered physical and virtual robots,
+hierarchical control groups, arbitrary group dimensions, and coordinated
+multi-group phases.  The accepted architecture and its safety boundaries are
+recorded in [`docs/v2-design.md`](docs/v2-design.md).
 
 This project keeps every time-sensitive operation on the computer physically
 connected to the SO-101.  The remote computer sends timestamped joint
@@ -149,3 +155,54 @@ Tests don't touch COM3 or enable real torque:
 ```powershell
 uv run python -m unittest discover -s tests -v
 ```
+
+## V2 development snapshot
+
+V2 registration is declarative and server-local.  The sample registry contains
+a split SO-101 (`arm` with five revolute axes and `gripper` with one normalized
+axis), a seven-axis simulator, and a virtual workcell containing both:
+
+```powershell
+uv run python -m remote_robot.cli --registry registry.example list `
+  --identity workcell_operator
+uv run python -m remote_robot.cli --registry registry.example describe `
+  demo_workcell
+uv run python -m remote_robot.cli --registry registry.example compile `
+  programs/v2_workcell_demo.json programs/v2_workcell_demo.rrp
+uv run python -m remote_robot.cli --registry registry.example validate `
+  programs/v2_workcell_demo.rrp
+```
+
+The `.rrp` file is deterministic canonical CBOR pinned to the complete root
+manifest.  Each sequence targets a semantic role path such as
+`primary_arm.arm`; compilation resolves it to a canonical physical group.  A
+phase may contain several dense sequences of different dimensions on one
+shared phase-local clock.
+
+The current network entry point exposes authenticated, identity-filtered
+discovery only.  Set the credential named by the selected identity TOML before
+starting it:
+
+```powershell
+$env:REMOTE_ROBOT_WORKCELL_TOKEN = "replace-with-at-least-32-random-characters"
+uv run python -m remote_robot.server_v2 --registry registry.example
+
+# In another shell with the same credential:
+uv run python -m remote_robot.client_v2 `
+  --identity workcell_operator `
+  --token-env REMOTE_ROBOT_WORKCELL_TOKEN list
+```
+
+The same process also exposes a read-only operations dashboard at
+`http://127.0.0.1:8080`. It shows the registered hierarchy, group dimensions,
+worker reachability, active leases, run state, journal events, and declared
+safety posture. The dashboard is deliberately restricted to a loopback IP and
+has no motion-command endpoint. Pass `--dashboard-port 0` to disable it.
+
+The local `RunOrchestrator` already executes multi-worker simulator phases
+through atomic leases, correlated scheduled/start/completion events,
+append-only run journals, and length-prefixed canonical-CBOR subprocess IPC.
+It coordinates safe-stop and releases the complete resource union on any
+failure.  The v2 server nevertheless reports network execution as unavailable
+until the run-stream endpoint and a real v2 hardware adapter are wired to that
+orchestrator; it never silently falls back to the v1 six-axis protocol.

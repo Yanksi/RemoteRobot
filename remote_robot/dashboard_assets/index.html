@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Remote Robot / Operations</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/dashboard.css">
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="shell">
+      <header class="masthead reveal">
+        <div class="brand-block">
+          <span class="eyebrow">REMOTE ROBOT / V2</span>
+          <h1>Operations<br><em>Recorder</em></h1>
+        </div>
+        <div class="server-plate">
+          <div class="plate-row">
+            <span>SERVER</span>
+            <strong id="server-id">CONNECTING</strong>
+          </div>
+          <div class="plate-row">
+            <span>LOCAL TIME</span>
+            <strong id="local-clock">--:--:--</strong>
+          </div>
+          <div class="plate-row">
+            <span>FEED</span>
+            <strong class="connection-state" id="connection-state">
+              <i></i> INITIALIZING
+            </strong>
+          </div>
+        </div>
+        <div class="readonly-seal" title="This interface cannot send robot commands">
+          <span>OBSERVE</span>
+          <b>READ<br>ONLY</b>
+        </div>
+      </header>
+
+      <section class="metric-rail reveal delay-1" aria-label="Server summary">
+        <article class="metric">
+          <span class="metric-index">01</span>
+          <strong id="metric-roots">—</strong>
+          <small>RUN ROOTS</small>
+        </article>
+        <article class="metric">
+          <span class="metric-index">02</span>
+          <strong id="metric-active">—</strong>
+          <small>ACTIVE RUNS</small>
+        </article>
+        <article class="metric">
+          <span class="metric-index">03</span>
+          <strong id="metric-leaves">—</strong>
+          <small>LEASED LEAVES</small>
+        </article>
+        <article class="metric danger-metric">
+          <span class="metric-index">04</span>
+          <strong id="metric-faults">—</strong>
+          <small>FAULTED RUNS</small>
+        </article>
+        <article class="metric attention-metric">
+          <span class="metric-index">05</span>
+          <strong id="metric-attention">—</strong>
+          <small>SAFETY FLAGS</small>
+        </article>
+      </section>
+
+      <main class="console-grid">
+        <section class="panel topology-panel reveal delay-2">
+          <div class="panel-heading">
+            <div>
+              <span class="section-code">A / TOPOLOGY</span>
+              <h2>Control graph</h2>
+            </div>
+            <span class="snapshot-age" id="snapshot-age">NO SNAPSHOT</span>
+          </div>
+          <div id="node-grid" class="node-grid" aria-live="polite">
+            <div class="skeleton wide"></div>
+            <div class="skeleton"></div>
+          </div>
+        </section>
+
+        <section class="panel runs-panel reveal delay-3">
+          <div class="panel-heading">
+            <div>
+              <span class="section-code">B / OWNERSHIP</span>
+              <h2>Run ledger</h2>
+            </div>
+            <span class="micro-label">EXCLUSIVE LEASE VIEW</span>
+          </div>
+          <div id="run-ledger" class="run-ledger">
+            <div class="empty-state">WAITING FOR JOURNAL INDEX</div>
+          </div>
+        </section>
+
+        <aside class="panel events-panel reveal delay-4">
+          <div class="panel-heading compact">
+            <div>
+              <span class="section-code">C / FLIGHT LOG</span>
+              <h2>Recent events</h2>
+            </div>
+          </div>
+          <ol id="event-log" class="event-log">
+            <li class="empty-state">NO EVENTS RECORDED</li>
+          </ol>
+        </aside>
+
+        <aside class="panel safety-panel reveal delay-5">
+          <div class="panel-heading compact">
+            <div>
+              <span class="section-code">D / ASSURANCE</span>
+              <h2>Safety posture</h2>
+            </div>
+          </div>
+          <div id="safety-list" class="safety-list">
+            <div class="empty-state">ASSESSING MANIFESTS</div>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="footer reveal delay-5">
+        <span>LOCAL LOOPBACK OPERATIONS DISPLAY</span>
+        <span id="footer-sequence">EVENT SEQ —</span>
+        <span>NO MOTION COMMAND INTERFACE</span>
+      </footer>
+    </div>
+
+    <noscript>This dashboard requires JavaScript to render operational snapshots.</noscript>
+    <script src="/assets/dashboard.js" defer></script>
+  </body>
+</html>

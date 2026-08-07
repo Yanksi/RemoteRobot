@@ -1,0 +1,82 @@
+[node]
+id = "so101_canada"
+kind = "physical"
+revision = 1
+exposed_as_run_root = true
+adapter = "lerobot.so101"
+adapter_revision = 1
+configuration_revision = 1
+resources = ["serial:so101_canada"]
+safety_domains = ["table_workspace_A"]
+safety_policies = ["axis_limits/v1", "so101_calibration/v1"]
+cross_collision_checked = false
+
+[node.watchdog]
+strategy = "supervised_only"
+expiry_action = "operator_power_cut"
+worker_crash_safe = false
+unattended_operation_allowed = false
+
+[node.connection]
+port = "COM3"
+calibration_file = "calibration/my_follower_arm.json"
+
+[[node.groups]]
+id = "arm"
+control_rate_hz = 20.0
+command_schemas = ["joint_position_trajectory/v1"]
+telemetry_schemas = ["axis_state/v1", "motor_health/v1"]
+
+[[node.groups.axes]]
+id = "shoulder_pan"
+kind = "revolute"
+unit = "rad"
+minimum = -2.0769
+maximum = 2.1306
+max_velocity = 1.0
+
+[[node.groups.axes]]
+id = "shoulder_lift"
+kind = "revolute"
+unit = "rad"
+minimum = -1.7102
+maximum = 1.9957
+max_velocity = 1.0
+
+[[node.groups.axes]]
+id = "elbow_flex"
+kind = "revolute"
+unit = "rad"
+minimum = -1.8022
+maximum = 1.6199
+max_velocity = 1.0
+
+[[node.groups.axes]]
+id = "wrist_flex"
+kind = "revolute"
+unit = "rad"
+minimum = -1.8620
+maximum = 1.7426
+max_velocity = 1.5
+
+[[node.groups.axes]]
+id = "wrist_roll"
+kind = "revolute"
+unit = "rad"
+minimum = -3.1416
+maximum = 3.1416
+max_velocity = 2.0
+
+[[node.groups]]
+id = "gripper"
+control_rate_hz = 20.0
+command_schemas = ["normalized_position_trajectory/v1"]
+telemetry_schemas = ["axis_state/v1", "motor_health/v1"]
+
+[[node.groups.axes]]
+id = "opening"
+kind = "normalized"
+unit = "1"
+minimum = 0.0
+maximum = 1.0
+max_velocity = 1.0

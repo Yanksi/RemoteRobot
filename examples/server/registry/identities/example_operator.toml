@@ -1,0 +1,7 @@
+[identity]
+id = "example_operator"
+credential_env = "REMOTE_ROBOT_EXAMPLE_TOKEN"
+discover = ["demo_cell"]
+observe = ["demo_cell"]
+control = ["demo_cell.*"]
+emergency_stop = ["demo_cell"]

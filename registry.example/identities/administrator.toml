@@ -1,0 +1,7 @@
+[identity]
+id = "administrator"
+credential_env = "REMOTE_ROBOT_ADMIN_TOKEN"
+discover = ["*"]
+observe = ["*"]
+control = ["*"]
+emergency_stop = ["*"]

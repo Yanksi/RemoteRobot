@@ -1,0 +1,7 @@
+[identity]
+id = "workcell_operator"
+credential_env = "REMOTE_ROBOT_WORKCELL_TOKEN"
+discover = ["demo_workcell"]
+observe = ["demo_workcell"]
+control = ["demo_workcell.*"]
+emergency_stop = ["demo_workcell"]

@@ -1,0 +1,14 @@
+[node]
+id = "demo_cell"
+kind = "composite"
+revision = 1
+exposed_as_run_root = true
+resources = ["camera:example_overhead"]
+safety_domains = ["example_cell"]
+safety_policies = ["coordinated_stop/v1"]
+cross_collision_checked = false
+max_start_skew_us = 20000
+
+[[node.children]]
+role = "robot"
+node = "demo_robot"

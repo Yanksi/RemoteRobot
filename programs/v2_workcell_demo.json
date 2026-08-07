@@ -1,0 +1,43 @@
+{
+  "format": "robot-program-template",
+  "version": 2,
+  "program_id": "v2-workcell-demo",
+  "root_id": "demo_workcell",
+  "phases": [
+    {
+      "phase_id": "coordinated-small-motion",
+      "sequences": [
+        {
+          "group": "primary_arm.arm",
+          "command_schema": "joint_position_trajectory/v1",
+          "reference": "phase_start_measured",
+          "samples": [
+            {"t_us": 0, "values": [0, 0, 0, 0, 0]},
+            {"t_us": 2000000, "values": [0.02, 0, 0, 0, 0]},
+            {"t_us": 4000000, "values": [0, 0, 0, 0, 0]}
+          ]
+        },
+        {
+          "group": "primary_arm.gripper",
+          "command_schema": "normalized_position_trajectory/v1",
+          "reference": "phase_start_measured",
+          "samples": [
+            {"t_us": 0, "values": [0]},
+            {"t_us": 2000000, "values": [-0.05]},
+            {"t_us": 4000000, "values": [0]}
+          ]
+        },
+        {
+          "group": "assistant_arm.arm",
+          "command_schema": "joint_position_trajectory/v1",
+          "reference": "phase_start_measured",
+          "samples": [
+            {"t_us": 0, "values": [0, 0, 0, 0, 0, 0, 0]},
+            {"t_us": 2000000, "values": [0, 0, 0, 0, 0, 0, 0.02]},
+            {"t_us": 4000000, "values": [0, 0, 0, 0, 0, 0, 0]}
+          ]
+        }
+      ]
+    }
+  ]
+}

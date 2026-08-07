@@ -1,0 +1,85 @@
+[node]
+id = "simulator_7dof"
+kind = "physical"
+revision = 1
+exposed_as_run_root = true
+adapter = "remote_robot.simulator"
+adapter_revision = 1
+configuration_revision = 1
+resources = ["simulator:seven_axis"]
+safety_domains = ["table_workspace_B"]
+safety_policies = ["axis_limits/v1"]
+cross_collision_checked = false
+
+[node.watchdog]
+strategy = "in_process_simulator"
+deadline_ms = 250
+expiry_action = "zero_output"
+worker_crash_safe = true
+unattended_operation_allowed = true
+
+[node.connection]
+instance = "seven_axis_demo"
+private_seed = "not-published"
+
+[[node.groups]]
+id = "arm"
+control_rate_hz = 100.0
+command_schemas = ["joint_position_trajectory/v1"]
+telemetry_schemas = ["axis_state/v1"]
+
+[[node.groups.axes]]
+id = "joint_1"
+kind = "revolute"
+unit = "rad"
+minimum = -3.1416
+maximum = 3.1416
+max_velocity = 2.0
+
+[[node.groups.axes]]
+id = "joint_2"
+kind = "revolute"
+unit = "rad"
+minimum = -2.6
+maximum = 2.6
+max_velocity = 2.0
+
+[[node.groups.axes]]
+id = "joint_3"
+kind = "revolute"
+unit = "rad"
+minimum = -2.6
+maximum = 2.6
+max_velocity = 2.0
+
+[[node.groups.axes]]
+id = "joint_4"
+kind = "revolute"
+unit = "rad"
+minimum = -3.1416
+maximum = 3.1416
+max_velocity = 2.0
+
+[[node.groups.axes]]
+id = "joint_5"
+kind = "revolute"
+unit = "rad"
+minimum = -2.6
+maximum = 2.6
+max_velocity = 2.0
+
+[[node.groups.axes]]
+id = "joint_6"
+kind = "revolute"
+unit = "rad"
+minimum = -3.1416
+maximum = 3.1416
+max_velocity = 2.0
+
+[[node.groups.axes]]
+id = "joint_7"
+kind = "revolute"
+unit = "rad"
+minimum = -3.1416
+maximum = 3.1416
+max_velocity = 2.0

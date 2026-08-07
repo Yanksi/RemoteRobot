@@ -1,0 +1,33 @@
+{
+  "format": "robot-program-template",
+  "version": 2,
+  "program_id": "example-multi-group-motion",
+  "root_id": "demo_cell",
+  "phases": [
+    {
+      "phase_id": "move-and-close",
+      "sequences": [
+        {
+          "group": "robot.arm",
+          "command_schema": "joint_position_trajectory/v1",
+          "reference": "phase_start_measured",
+          "samples": [
+            {"t_us": 0, "values": [0, 0, 0]},
+            {"t_us": 1000000, "values": [0.1, -0.05, 0.05]},
+            {"t_us": 2000000, "values": [0, 0, 0]}
+          ]
+        },
+        {
+          "group": "robot.gripper",
+          "command_schema": "normalized_position_trajectory/v1",
+          "reference": "phase_start_measured",
+          "samples": [
+            {"t_us": 0, "values": [0]},
+            {"t_us": 1000000, "values": [-0.1]},
+            {"t_us": 2000000, "values": [0]}
+          ]
+        }
+      ]
+    }
+  ]
+}

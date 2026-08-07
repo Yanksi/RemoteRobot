@@ -1,0 +1,18 @@
+[node]
+id = "demo_workcell"
+kind = "composite"
+revision = 1
+exposed_as_run_root = true
+resources = ["camera:overhead_1"]
+safety_domains = ["combined_demo_workspace"]
+safety_policies = ["coordinated_stop/v1"]
+cross_collision_checked = false
+max_start_skew_us = 50000
+
+[[node.children]]
+role = "primary_arm"
+node = "so101_canada"
+
+[[node.children]]
+role = "assistant_arm"
+node = "simulator_7dof"

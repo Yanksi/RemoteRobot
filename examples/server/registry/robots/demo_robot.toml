@@ -1,0 +1,68 @@
+[node]
+id = "demo_robot"
+kind = "physical"
+revision = 1
+exposed_as_run_root = false
+adapter = "remote_robot.simulator"
+adapter_revision = 1
+configuration_revision = 1
+resources = ["simulator:demo_robot"]
+safety_domains = ["example_table"]
+safety_policies = ["axis_limits/v1"]
+cross_collision_checked = false
+
+[node.watchdog]
+strategy = "in_process_simulator"
+deadline_ms = 250
+expiry_action = "zero_output"
+worker_crash_safe = true
+unattended_operation_allowed = true
+
+# Connection values are server-private and never appear in public manifests.
+[node.connection]
+instance = "example_demo_robot"
+private_seed = "replace-locally-if-needed"
+
+[[node.groups]]
+id = "arm"
+control_rate_hz = 100.0
+command_schemas = ["joint_position_trajectory/v1"]
+telemetry_schemas = ["axis_state/v1"]
+
+[[node.groups.axes]]
+id = "base"
+kind = "revolute"
+unit = "rad"
+minimum = -3.1416
+maximum = 3.1416
+max_velocity = 2.0
+
+[[node.groups.axes]]
+id = "shoulder"
+kind = "revolute"
+unit = "rad"
+minimum = -2.0
+maximum = 2.0
+max_velocity = 1.5
+
+[[node.groups.axes]]
+id = "elbow"
+kind = "revolute"
+unit = "rad"
+minimum = -2.5
+maximum = 2.5
+max_velocity = 1.5
+
+[[node.groups]]
+id = "gripper"
+control_rate_hz = 50.0
+command_schemas = ["normalized_position_trajectory/v1"]
+telemetry_schemas = ["axis_state/v1"]
+
+[[node.groups.axes]]
+id = "opening"
+kind = "normalized"
+unit = "1"
+minimum = 0.0
+maximum = 1.0
+max_velocity = 1.0
